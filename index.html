@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1024">
-    <title>محول Xtream و Stalker الاستثنائي</title>
+    <title>محول Xtream و Stalker الاستثنائي (مع الفحص)</title>
     <style>
         :root {
             --primary-color: #3a86ff;
@@ -11,6 +11,9 @@
             --success-color: #00b4d8;
             --success-hover: #0096c7;
             --stalker-color: #ffb703;
+            --danger-color: #ef233c;
+            --warning-color: #ffb703;
+            --active-color: #2b9348;
             --bg-color: #121212;
             --box-bg: #1e1e1e;
             --text-color: #e0e0e0;
@@ -148,10 +151,16 @@
             cursor: pointer;
             transition: background 0.3s;
             margin-top: 10px;
+            position: relative;
         }
 
         button:hover {
             background-color: var(--hover-color);
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
         }
 
         .result-box {
@@ -164,10 +173,19 @@
             animation: fadeIn 0.5s;
         }
 
-        .result-box h3 {
-            margin-top: 0;
-            color: var(--success-color);
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: white;
         }
+
+        .status-active { background-color: var(--active-color); }
+        .status-expired { background-color: var(--danger-color); }
+        .status-warning { background-color: var(--warning-color); color: #000; }
 
         .result-url {
             word-break: break-all;
@@ -215,7 +233,7 @@
 <body>
 
     <div class="container">
-        <h2>استخراج قنوات Xtream & Stalker</h2>
+        <h2>استخراج وفحص قنوات Xtream & Stalker</h2>
         
         <div class="form-group">
             <label for="pasteArea">انسخ رسالة الاشتراك كاملة هنا:</label>
@@ -246,10 +264,10 @@
             <input type="text" id="mac" placeholder="00:1A:79:XX:XX:XX">
         </div>
         
-        <button onclick="processData()">معالجة البيانات</button>
+        <button id="processBtn" onclick="processData()">فحص الحساب وتوليد الرابط</button>
 
         <div class="result-box" id="resultBox">
-            <!-- المحتوى هنا هيتغير بالـ JavaScript بناءً على نوع البيانات -->
+            <!-- المحتوى هيتحدث بالـ JavaScript -->
         </div>
     </div>
 
@@ -257,79 +275,110 @@
         function autoExtractData() {
             const text = document.getElementById('pasteArea').value;
             
-            // 1. استخراج الرابط
             const urlMatch = text.match(/(https?:\/\/[^\s]+)/i);
-            if (urlMatch) {
-                document.getElementById('server').value = urlMatch[1].trim();
-            }
+            if (urlMatch) document.getElementById('server').value = urlMatch[1].trim();
 
-            // 2. استخراج اليوزرنيم
             const userMatch = text.match(/(?:اسم المستخدم|username|user|يوزر)[^:\n]*[:=-]\s*([^\s]+)/i);
-            if (userMatch) {
-                document.getElementById('username').value = userMatch[1].trim();
-            }
+            if (userMatch) document.getElementById('username').value = userMatch[1].trim();
 
-            // 3. استخراج الباسوورد
             const passMatch = text.match(/(?:كلمة السر|كلمة المرور|password|pass|باسوورد)[^:\n]*[:=-]\s*([^\s]+)/i);
-            if (passMatch) {
-                document.getElementById('password').value = passMatch[1].trim();
-            }
+            if (passMatch) document.getElementById('password').value = passMatch[1].trim();
 
-            // 4. استخراج الماك أدرس (بيدور على أي صيغة ماك أدرس 00:11:22:33:44:55)
             const macMatch = text.match(/([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})/);
-            if (macMatch) {
-                document.getElementById('mac').value = macMatch[1].toUpperCase().trim();
-            }
+            if (macMatch) document.getElementById('mac').value = macMatch[1].toUpperCase().trim();
         }
 
-        function processData() {
+        // دالة لتحويل الـ Unix Timestamp لتاريخ مقروء
+        function formatDate(unixTimestamp) {
+            if (!unixTimestamp) return "غير معروف";
+            let date = new Date(unixTimestamp * 1000);
+            return date.toLocaleDateString('ar-EG') + " " + date.toLocaleTimeString('ar-EG');
+        }
+
+        async function processData() {
             let server = document.getElementById('server').value.trim();
             let username = document.getElementById('username').value.trim();
             let password = document.getElementById('password').value.trim();
             let mac = document.getElementById('mac').value.trim();
             let resultBox = document.getElementById('resultBox');
+            let btn = document.getElementById('processBtn');
 
             if(!server) {
                 alert('يا غالي لازم على الأقل يكون فيه رابط السيرفر!');
                 return;
             }
 
-            if (server.endsWith('/')) {
-                server = server.slice(0, -1);
-            }
-            if (!server.startsWith('http://') && !server.startsWith('https://')) {
-                server = 'http://' + server;
-            }
+            if (server.endsWith('/')) server = server.slice(0, -1);
+            if (!server.startsWith('http://') && !server.startsWith('https://')) server = 'http://' + server;
 
-            // لو فيه يوزر وباسوورد (نظام اكستريم)
+            // تغيير حالة الزرار وقت التحميل
+            btn.innerText = "جاري الفحص...";
+            btn.disabled = true;
+            resultBox.style.display = 'none';
+
+            // حالة الـ Xtream (فيها فحص)
             if (username && password) {
+                let apiUrl = `${server}/player_api.php?username=${username}&password=${password}`;
                 let m3u8Url = `${server}/get.php?username=${username}&password=${password}&type=m3u_plus&output=m3u8`;
-                
+                let statusHtml = '';
+
+                try {
+                    // محاولة فحص الحساب
+                    let response = await fetch(apiUrl);
+                    let data = await response.json();
+
+                    if (data && data.user_info) {
+                        let status = data.user_info.status;
+                        let expDate = formatDate(data.user_info.exp_date);
+
+                        if (status === 'Active') {
+                            statusHtml = `<span class="status-badge status-active">✅ الحساب شغال | ينتهي في: ${expDate}</span>`;
+                        } else {
+                            statusHtml = `<span class="status-badge status-expired">❌ الحساب غير مفعل أو منتهي (الحالة: ${status})</span>`;
+                        }
+                    } else {
+                        statusHtml = `<span class="status-badge status-expired">❌ البيانات دي غلط (اليوزر أو الباسوورد مش شغالين)</span>`;
+                    }
+                } catch (error) {
+                    // لو حصل مشكلة بسبب حماية المتصفح CORS
+                    statusHtml = `
+                        <span class="status-badge status-warning">⚠️ السيرفر قافل الفحص المباشر (CORS)</span>
+                        <p style="font-size: 13px; color: #a0a0a0;">مش قادرين نجيب تاريخ الانتهاء بسبب حماية السيرفر، بس الرابط اتولد، حمله وجربه بنفسك.</p>
+                    `;
+                }
+
+                // عرض النتيجة
                 resultBox.innerHTML = `
-                    <h3 style="color: #00b4d8;">✅ تم توليد رابط الاكستريم</h3>
+                    ${statusHtml}
                     <p>رابط M3U8 المباشر الخاص بيك:</p>
                     <div class="result-url">${m3u8Url}</div>
                     <a href="${m3u8Url}" class="btn-download">تحميل ملف القنوات يدوياً</a>
                 `;
                 resultBox.style.display = 'block';
-                window.location.href = m3u8Url; // تحميل مباشر
+
+                // لو الحساب شغال أو مقدرناش نفحصه، حمل الملف
+                if (!statusHtml.includes('البيانات دي غلط')) {
+                    window.location.href = m3u8Url;
+                }
             } 
-            // لو مفيش يوزر وباسوورد بس فيه ماك أدرس (نظام ستالكر)
+            // حالة الـ Stalker (بدون فحص لأن الفحص من المتصفح مستحيل)
             else if (mac) {
                 resultBox.innerHTML = `
-                    <h3 style="color: #ffb703;">📺 بيانات Stalker Portal</h3>
-                    <p class="stalker-note">تنبيه فني: نظام Stalker مش بيدعم تحميل ملفات M3U8 مباشرة. استخدم البيانات دي جوه برامج الستالكر (زي STB Emu أو أجهزة MAG).</p>
+                    <span class="status-badge status-warning">ℹ️ بورتال Stalker (لا يمكن فحصه المباشر)</span>
+                    <p class="stalker-note">تنبيه فني: نظام Stalker بيحتاج برامج مخصصة للاتصال، والفحص من المتصفح مقفول أمنياً. استخدم البيانات دي جوه تطبيقك.</p>
                     <p><strong>رابط البورتال (Portal):</strong></p>
                     <div class="result-url">${server}/c/</div>
                     <p><strong>الماك أدرس (MAC):</strong></p>
                     <div class="result-url">${mac}</div>
                 `;
                 resultBox.style.display = 'block';
-            } 
-            // لو مفيش بيانات كافية
-            else {
+            } else {
                 alert('البيانات مش كاملة يا غالي. لازم يوزر وباسوورد للاكستريم، أو ماك أدرس للستالكر.');
             }
+
+            // إرجاع الزرار لحالته
+            btn.innerText = "فحص الحساب وتوليد الرابط";
+            btn.disabled = false;
         }
     </script>
 </body>

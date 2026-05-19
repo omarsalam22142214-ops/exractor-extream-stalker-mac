@@ -212,6 +212,7 @@
             border-radius: 6px;
             font-weight: bold;
             transition: background 0.3s;
+            cursor: pointer;
         }
 
         .btn-download:hover {
@@ -261,8 +262,7 @@
         <button id="processBtn" onclick="processData()">فحص الحساب وتوليد الرابط</button>
 
         <div class="result-box" id="resultBox">
-            <!-- المحتوى هيتحدث بالـ JavaScript -->
-        </div>
+            </div>
     </div>
 
     <script>
@@ -270,7 +270,6 @@
             const text = document.getElementById('pasteArea').value;
             let extracted = false;
 
-            // 1. فحص لو الرابط هو لينك M3U كامل بيحتوي على get.php
             if (text.includes('get.php') && text.includes('username=') && text.includes('password=')) {
                 const serverMatch = text.match(/(https?:\/\/[^\/\s]+)/i);
                 const userM = text.match(/username=([^&\s]+)/i);
@@ -282,7 +281,6 @@
                     extracted = true;
                 }
             } 
-            // 2. فحص لو الرابط هو لينك قناة مباشر أو فيلم
             else {
                 const channelMatch = text.match(/(https?:\/\/[^\/\s]+)\/(?:live\/|movie\/|series\/)?([^\/\s?&]+)\/([^\/\s?&]+)\/[^\/\s?&]+/i);
                 if (channelMatch && !text.includes('/c/')) {
@@ -293,7 +291,6 @@
                 }
             }
 
-            // 3. الاستخراج من الرسائل النصية
             if (!extracted) {
                 const urlMatch = text.match(/(https?:\/\/[^\s]+)/i);
                 if (urlMatch) document.getElementById('server').value = urlMatch[1].trim();
@@ -305,14 +302,12 @@
                 if (passMatch) document.getElementById('password').value = passMatch[1].trim();
             }
 
-            // 4. استخراج الماك أدرس
             const macMatch = text.match(/([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})/);
             if (macMatch) {
                 document.getElementById('mac').value = macMatch[1].toUpperCase().trim();
             }
         }
 
-        // دالة تحويل الوقت باستخدام الأرقام القياسية (الإنجليزية)
         function formatDate(unixTimestamp) {
             if (!unixTimestamp) return "Unknown";
             let date = new Date(unixTimestamp * 1000);
@@ -339,7 +334,7 @@
             btn.disabled = true;
             resultBox.style.display = 'none';
 
-            // حالة الـ Xtream
+            // أولاً: حالة الـ Xtream القياسية
             if (username && password) {
                 let apiUrl = `${server}/player_api.php?username=${username}&password=${password}`;
                 let m3u8Url = `${server}/get.php?username=${username}&password=${password}&type=m3u_plus&output=m3u8`;
@@ -364,7 +359,7 @@
                 } catch (error) {
                     statusHtml = `
                         <span class="status-badge status-warning">⚠️ Server blocked direct check (CORS)</span>
-                        <p style="font-size: 13px; color: #a0a0a0;">مش قادرين نجيب تاريخ الانتهاء بسبب حماية السيرفر، بس الرابط اتولد، حمله وجربه بنفسك.</p>
+                        <p style="font-size: 13px; color: #a0a0a0;">مش قادرين نجيب تاريخ الانتهاء بسبب حماية السيرفر، بس الرابط اتولد جاهز.</p>
                     `;
                 }
 
@@ -380,15 +375,18 @@
                     window.location.href = m3u8Url;
                 }
             } 
-            // حالة الـ Stalker
+            // ثانياً: حالة الـ Stalker مع المحرك الذكي الجديد للتحويل لـ M3U
             else if (mac) {
                 resultBox.innerHTML = `
-                    <span class="status-badge status-warning">ℹ️ Stalker Portal (Direct check not supported)</span>
-                    <p style="color: var(--stalker-color); font-size: 14px; margin-bottom: 15px;">تنبيه فني: نظام Stalker بيحتاج برامج مخصصة للاتصال. استخدم البيانات دي جوه تطبيقك.</p>
-                    <p><strong>رابط البورتال (Portal):</strong></p>
+                    <span class="status-badge status-warning">ℹ️ Stalker Portal Detected</span>
+                    <p style="color: var(--stalker-color); font-size: 14px; margin-bottom: 15px;">
+                        تنبيه: السيرفر مش بيطلع ملف مباشر، لكن تقدر تضغط على الزرار تحت لمحاولة سحب القنوات وتحويلها لملف M3U (لازم تفعل إضافة Allow CORS في متصفحك عشان تنجح).
+                    </p>
+                    <p><strong>رابط البورتال الأساسي:</strong></p>
                     <div class="result-url">${server}/c/</div>
-                    <p><strong>الماك أدرس (MAC):</strong></p>
+                    <p><strong>الماك أدرس:</strong></p>
                     <div class="result-url">${mac}</div>
+                    <button onclick="convertStalkerToM3u('${server}', '${mac}')" style="background-color: var(--success-color); margin-top: 15px;">🚀 استخراج وتحميل ملف القنوات كـ M3U</button>
                 `;
                 resultBox.style.display = 'block';
             } else {
@@ -397,6 +395,57 @@
 
             btn.innerText = "فحص الحساب وتوليد الرابط";
             btn.disabled = false;
+        }
+
+        // المحرك الجديد لتحويل الستالكر إلى ملف قنوات متحمل
+        async function convertStalkerToM3u(server, mac) {
+            alert("بدأنا عملية الاستخراج.. تأكد إنك مفعل إضافة فك حظر الـ CORS على متصفحك عشان العملية تنجح!");
+            
+            try {
+                // خطوة 1: نداء سيرفر الستالكر لجلب لستة القنوات كلها بالماك أدرس
+                let fetchUrl = `${server}/portal.php?type=itv&action=get_all_channels&mac=${encodeURIComponent(mac)}`;
+                
+                let response = await fetch(fetchUrl, {
+                    headers: {
+                        'X-User-Agent': 'model=MAG250;'
+                    }
+                });
+                
+                let result = await response.json();
+                
+                // التأكد إن السيرفر رد بالبيانات
+                if (result && result.js && result.js.data && result.js.data.length > 0) {
+                    let channels = result.js.data;
+                    let m3uContent = "#EXTM3U\n";
+                    
+                    // خطوة 2: صياغة لستة القنوات وتحويلها لملف قياسي
+                    channels.forEach(ch => {
+                        let cmd = ch.cmd || "";
+                        // تنظيف رابط التشغيل الداخلي
+                        let streamUrl = cmd.replace(/^[a-zA-Z0-9_]+\s+/, ""); 
+                        
+                        if (!streamUrl.startsWith('http')) {
+                            streamUrl = server + (streamUrl.startsWith('/') ? '' : '/') + streamUrl;
+                        }
+                        
+                        m3uContent += `#EXTINF:-1 tvg-name="${ch.name}",${ch.name}\n${streamUrl}\n`;
+                    });
+                    
+                    // خطوة 3: إجبار المتصفح على تحميل الملف المصنوع على جهازك
+                    let blob = new Blob([m3uContent], { type: 'text/plain;charset=utf-8' });
+                    let downloadLink = document.createElement('a');
+                    downloadLink.href = URL.createObjectURL(blob);
+                    downloadLink.download = 'Stalker_Channels.m3u';
+                    downloadLink.click();
+                    
+                    alert("مبروك يا بطل! تم استخراج القنوات وتحميل ملف الـ M3U بنجاح.");
+                } else {
+                    alert("السيرفر ماردش ببيانات القنوات. غالباً الحساب منتهي أو إضافة الـ CORS مش متفعلة صح.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("فشل الاتصال بالسيرفر! المتصفح حظر العملية. لازم تنزل إضافة 'Allow CORS' وتفعلها في الكروم عشان يشتغل الزرار ده.");
+            }
         }
     </script>
 </body>

@@ -282,11 +282,9 @@
                     extracted = true;
                 }
             } 
-            // 2. فحص لو الرابط هو لينك قناة مباشر أو فيلم (عشان نستخرج منه اليوزر والباسوورد)
-            // الصيغة: http://host:port/live/user/pass/id.ts أو http://host:port/user/pass/id
+            // 2. فحص لو الرابط هو لينك قناة مباشر أو فيلم
             else {
                 const channelMatch = text.match(/(https?:\/\/[^\/\s]+)\/(?:live\/|movie\/|series\/)?([^\/\s?&]+)\/([^\/\s?&]+)\/[^\/\s?&]+/i);
-                // بنتأكد إن ده مش بورتال ستالكر (مفيهوش /c/) عشان ميتلخبطش
                 if (channelMatch && !text.includes('/c/')) {
                     document.getElementById('server').value = channelMatch[1].trim();
                     document.getElementById('username').value = channelMatch[2].trim();
@@ -295,7 +293,7 @@
                 }
             }
 
-            // 3. لو مكنش لينك مباشر، نستخدم طريقة الاستخراج من الرسائل النصية
+            // 3. الاستخراج من الرسائل النصية
             if (!extracted) {
                 const urlMatch = text.match(/(https?:\/\/[^\s]+)/i);
                 if (urlMatch) document.getElementById('server').value = urlMatch[1].trim();
@@ -307,18 +305,18 @@
                 if (passMatch) document.getElementById('password').value = passMatch[1].trim();
             }
 
-            // 4. استخراج الماك أدرس في كل الحالات (لو موجود)
+            // 4. استخراج الماك أدرس
             const macMatch = text.match(/([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})/);
             if (macMatch) {
                 document.getElementById('mac').value = macMatch[1].toUpperCase().trim();
             }
         }
 
-        // دالة لتحويل الـ Unix Timestamp لتاريخ مقروء
+        // دالة تحويل الوقت باستخدام الأرقام القياسية (الإنجليزية)
         function formatDate(unixTimestamp) {
-            if (!unixTimestamp) return "غير معروف";
+            if (!unixTimestamp) return "Unknown";
             let date = new Date(unixTimestamp * 1000);
-            return date.toLocaleDateString('ar-EG') + " " + date.toLocaleTimeString('ar-EG');
+            return date.toLocaleDateString('en-GB') + " " + date.toLocaleTimeString('en-US');
         }
 
         async function processData() {
@@ -356,16 +354,16 @@
                         let expDate = formatDate(data.user_info.exp_date);
 
                         if (status === 'Active') {
-                            statusHtml = `<span class="status-badge status-active">✅ الحساب شغال | ينتهي في: ${expDate}</span>`;
+                            statusHtml = `<span class="status-badge status-active">✅ Active | Expires on: ${expDate}</span>`;
                         } else {
-                            statusHtml = `<span class="status-badge status-expired">❌ الحساب غير مفعل أو منتهي (الحالة: ${status})</span>`;
+                            statusHtml = `<span class="status-badge status-expired">❌ Expired or Disabled (Status: ${status})</span>`;
                         }
                     } else {
-                        statusHtml = `<span class="status-badge status-expired">❌ البيانات دي غلط (اليوزر أو الباسوورد مش شغالين)</span>`;
+                        statusHtml = `<span class="status-badge status-expired">❌ Invalid Details (Incorrect User or Pass)</span>`;
                     }
                 } catch (error) {
                     statusHtml = `
-                        <span class="status-badge status-warning">⚠️ السيرفر قافل الفحص المباشر (CORS)</span>
+                        <span class="status-badge status-warning">⚠️ Server blocked direct check (CORS)</span>
                         <p style="font-size: 13px; color: #a0a0a0;">مش قادرين نجيب تاريخ الانتهاء بسبب حماية السيرفر، بس الرابط اتولد، حمله وجربه بنفسك.</p>
                     `;
                 }
@@ -378,14 +376,14 @@
                 `;
                 resultBox.style.display = 'block';
 
-                if (!statusHtml.includes('البيانات دي غلط')) {
+                if (!statusHtml.includes('Invalid Details')) {
                     window.location.href = m3u8Url;
                 }
             } 
             // حالة الـ Stalker
             else if (mac) {
                 resultBox.innerHTML = `
-                    <span class="status-badge status-warning">ℹ️ بورتال Stalker (لا يمكن فحصه المباشر)</span>
+                    <span class="status-badge status-warning">ℹ️ Stalker Portal (Direct check not supported)</span>
                     <p style="color: var(--stalker-color); font-size: 14px; margin-bottom: 15px;">تنبيه فني: نظام Stalker بيحتاج برامج مخصصة للاتصال. استخدم البيانات دي جوه تطبيقك.</p>
                     <p><strong>رابط البورتال (Portal):</strong></p>
                     <div class="result-url">${server}/c/</div>

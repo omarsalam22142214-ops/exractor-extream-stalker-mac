@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1024">
+    <title>محول Xtream و Stalker الاستثنائي</title>
+    <style>
+        :root {
+            --primary-color: #3a86ff;
+            --hover-color: #256ce1;
+            --success-color: #00b4d8;
+            --success-hover: #0096c7;
+            --stalker-color: #ffb703;
+            --bg-color: #121212;
+            --box-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #333333;
+            --input-bg: #2d2d2d;
+            --muted-text: #a0a0a0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+
+        .container {
+            background-color: var(--box-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 650px;
+            border: 1px solid #2a2a2a;
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--text-color);
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 26px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px dashed #444;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 15px;
+            resize: vertical;
+            min-height: 110px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            transition: all 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background-color: #252525;
+            box-shadow: 0 0 8px rgba(58, 134, 255, 0.3);
+        }
+
+        textarea::placeholder, input::placeholder {
+            color: #777;
+        }
+
+        input[type="text"], 
+        input[type="password"], 
+        input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+            direction: ltr;
+            transition: border-color 0.3s;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(58, 134, 255, 0.3);
+            background-color: #252525;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .divider::after {
+            content: "بيانات الاشتراك (تتعبأ تلقائياً)";
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--box-bg);
+            padding: 0 15px;
+            font-size: 13px;
+            color: var(--muted-text);
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .flex-row .form-group {
+            flex: 1;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: var(--hover-color);
+        }
+
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .result-box h3 {
+            margin-top: 0;
+            color: var(--success-color);
+        }
+
+        .result-url {
+            word-break: break-all;
+            background: #121212;
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-family: monospace;
+            direction: ltr;
+            text-align: left;
+            font-size: 15px;
+            color: #ff79c6;
+            margin-bottom: 15px;
+        }
+
+        .btn-download {
+            display: block;
+            text-align: center;
+            background-color: var(--success-color);
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .btn-download:hover {
+            background-color: var(--success-hover);
+        }
+
+        .stalker-note {
+            color: var(--stalker-color);
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>استخراج قنوات Xtream & Stalker</h2>
+        
+        <div class="form-group">
+            <label for="pasteArea">انسخ رسالة الاشتراك كاملة هنا:</label>
+            <textarea id="pasteArea" placeholder="انسخ رسالة الاكستريم (يوزر وباسوورد) أو رسالة الستالكر (ماك أدرس) هنا..." oninput="autoExtractData()"></textarea>
+        </div>
+
+        <div class="divider"></div>
+        
+        <div class="form-group">
+            <label for="server">رابط السيرفر (Host / Portal URL)</label>
+            <input type="url" id="server" placeholder="http://domain.com:8080" required>
+        </div>
+        
+        <div class="flex-row">
+            <div class="form-group">
+                <label for="username">اسم المستخدم (Xtream)</label>
+                <input type="text" id="username" placeholder="Username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">كلمة المرور (Xtream)</label>
+                <input type="text" id="password" placeholder="Password"> 
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="mac">الماك أدرس (Stalker MAC)</label>
+            <input type="text" id="mac" placeholder="00:1A:79:XX:XX:XX">
+        </div>
+        
+        <button onclick="processData()">معالجة البيانات</button>
+
+        <div class="result-box" id="resultBox">
+            <!-- المحتوى هنا هيتغير بالـ JavaScript بناءً على نوع البيانات -->
+        </div>
+    </div>
+
+    <script>
+        function autoExtractData() {
+            const text = document.getElementById('pasteArea').value;
+            
+            // 1. استخراج الرابط
+            const urlMatch = text.match(/(https?:\/\/[^\s]+)/i);
+            if (urlMatch) {
+                document.getElementById('server').value = urlMatch[1].trim();
+            }
+
+            // 2. استخراج اليوزرنيم
+            const userMatch = text.match(/(?:اسم المستخدم|username|user|يوزر)[^:\n]*[:=-]\s*([^\s]+)/i);
+            if (userMatch) {
+                document.getElementById('username').value = userMatch[1].trim();
+            }
+
+            // 3. استخراج الباسوورد
+            const passMatch = text.match(/(?:كلمة السر|كلمة المرور|password|pass|باسوورد)[^:\n]*[:=-]\s*([^\s]+)/i);
+            if (passMatch) {
+                document.getElementById('password').value = passMatch[1].trim();
+            }
+
+            // 4. استخراج الماك أدرس (بيدور على أي صيغة ماك أدرس 00:11:22:33:44:55)
+            const macMatch = text.match(/([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})/);
+            if (macMatch) {
+                document.getElementById('mac').value = macMatch[1].toUpperCase().trim();
+            }
+        }
+
+        function processData() {
+            let server = document.getElementById('server').value.trim();
+            let username = document.getElementById('username').value.trim();
+            let password = document.getElementById('password').value.trim();
+            let mac = document.getElementById('mac').value.trim();
+            let resultBox = document.getElementById('resultBox');
+
+            if(!server) {
+                alert('يا غالي لازم على الأقل يكون فيه رابط السيرفر!');
+                return;
+            }
+
+            if (server.endsWith('/')) {
+                server = server.slice(0, -1);
+            }
+            if (!server.startsWith('http://') && !server.startsWith('https://')) {
+                server = 'http://' + server;
+            }
+
+            // لو فيه يوزر وباسوورد (نظام اكستريم)
+            if (username && password) {
+                let m3u8Url = `${server}/get.php?username=${username}&password=${password}&type=m3u_plus&output=m3u8`;
+                
+                resultBox.innerHTML = `
+                    <h3 style="color: #00b4d8;">✅ تم توليد رابط الاكستريم</h3>
+                    <p>رابط M3U8 المباشر الخاص بيك:</p>
+                    <div class="result-url">${m3u8Url}</div>
+                    <a href="${m3u8Url}" class="btn-download">تحميل ملف القنوات يدوياً</a>
+                `;
+                resultBox.style.display = 'block';
+                window.location.href = m3u8Url; // تحميل مباشر
+            } 
+            // لو مفيش يوزر وباسوورد بس فيه ماك أدرس (نظام ستالكر)
+            else if (mac) {
+                resultBox.innerHTML = `
+                    <h3 style="color: #ffb703;">📺 بيانات Stalker Portal</h3>
+                    <p class="stalker-note">تنبيه فني: نظام Stalker مش بيدعم تحميل ملفات M3U8 مباشرة. استخدم البيانات دي جوه برامج الستالكر (زي STB Emu أو أجهزة MAG).</p>
+                    <p><strong>رابط البورتال (Portal):</strong></p>
+                    <div class="result-url">${server}/c/</div>
+                    <p><strong>الماك أدرس (MAC):</strong></p>
+                    <div class="result-url">${mac}</div>
+                `;
+                resultBox.style.display = 'block';
+            } 
+            // لو مفيش بيانات كافية
+            else {
+                alert('البيانات مش كاملة يا غالي. لازم يوزر وباسوورد للاكستريم، أو ماك أدرس للستالكر.');
+            }
+        }
+    </script>
+</body>
+</html>

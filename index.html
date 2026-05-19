@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1024">
-    <title>محول Xtream و Stalker الاستثنائي (مع الفحص)</title>
+    <title>محول وفاحص Xtream & Stalker الشامل</title>
     <style>
         :root {
             --primary-color: #3a86ff;
@@ -70,12 +70,13 @@
             border: 2px dashed #444;
             border-radius: 8px;
             box-sizing: border-box;
-            font-size: 15px;
+            font-size: 14px;
             resize: vertical;
             min-height: 110px;
             background-color: var(--input-bg);
             color: var(--text-color);
             transition: all 0.3s;
+            line-height: 1.5;
         }
 
         textarea:focus {
@@ -85,7 +86,7 @@
             box-shadow: 0 0 8px rgba(58, 134, 255, 0.3);
         }
 
-        textarea::placeholder, input::placeholder {
+        textarea::placeholder {
             color: #777;
         }
 
@@ -217,13 +218,6 @@
             background-color: var(--success-hover);
         }
 
-        .stalker-note {
-            color: var(--stalker-color);
-            font-size: 14px;
-            margin-bottom: 15px;
-            line-height: 1.6;
-        }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -236,8 +230,8 @@
         <h2>استخراج وفحص قنوات Xtream & Stalker</h2>
         
         <div class="form-group">
-            <label for="pasteArea">انسخ رسالة الاشتراك كاملة هنا:</label>
-            <textarea id="pasteArea" placeholder="انسخ رسالة الاكستريم (يوزر وباسوورد) أو رسالة الستالكر (ماك أدرس) هنا..." oninput="autoExtractData()"></textarea>
+            <label for="pasteArea">انسخ هنا أي حاجة (رسالة، ماك، أو لينك قناة/M3U):</label>
+            <textarea id="pasteArea" placeholder="مثال 1: رسالة اشتراك يوزر وباسوورد&#10;مثال 2: ماك أدرس 00:1A:79:XX:XX:XX&#10;مثال 3: لينك قناة http://domain:80/live/user/pass/123.ts&#10;مثال 4: لينك m3u كامل فيه get.php" oninput="autoExtractData()"></textarea>
         </div>
 
         <div class="divider"></div>
@@ -274,18 +268,50 @@
     <script>
         function autoExtractData() {
             const text = document.getElementById('pasteArea').value;
-            
-            const urlMatch = text.match(/(https?:\/\/[^\s]+)/i);
-            if (urlMatch) document.getElementById('server').value = urlMatch[1].trim();
+            let extracted = false;
 
-            const userMatch = text.match(/(?:اسم المستخدم|username|user|يوزر)[^:\n]*[:=-]\s*([^\s]+)/i);
-            if (userMatch) document.getElementById('username').value = userMatch[1].trim();
+            // 1. فحص لو الرابط هو لينك M3U كامل بيحتوي على get.php
+            if (text.includes('get.php') && text.includes('username=') && text.includes('password=')) {
+                const serverMatch = text.match(/(https?:\/\/[^\/\s]+)/i);
+                const userM = text.match(/username=([^&\s]+)/i);
+                const passM = text.match(/password=([^&\s]+)/i);
+                if (serverMatch && userM && passM) {
+                    document.getElementById('server').value = serverMatch[1].trim();
+                    document.getElementById('username').value = userM[1].trim();
+                    document.getElementById('password').value = passM[1].trim();
+                    extracted = true;
+                }
+            } 
+            // 2. فحص لو الرابط هو لينك قناة مباشر أو فيلم (عشان نستخرج منه اليوزر والباسوورد)
+            // الصيغة: http://host:port/live/user/pass/id.ts أو http://host:port/user/pass/id
+            else {
+                const channelMatch = text.match(/(https?:\/\/[^\/\s]+)\/(?:live\/|movie\/|series\/)?([^\/\s?&]+)\/([^\/\s?&]+)\/[^\/\s?&]+/i);
+                // بنتأكد إن ده مش بورتال ستالكر (مفيهوش /c/) عشان ميتلخبطش
+                if (channelMatch && !text.includes('/c/')) {
+                    document.getElementById('server').value = channelMatch[1].trim();
+                    document.getElementById('username').value = channelMatch[2].trim();
+                    document.getElementById('password').value = channelMatch[3].trim();
+                    extracted = true;
+                }
+            }
 
-            const passMatch = text.match(/(?:كلمة السر|كلمة المرور|password|pass|باسوورد)[^:\n]*[:=-]\s*([^\s]+)/i);
-            if (passMatch) document.getElementById('password').value = passMatch[1].trim();
+            // 3. لو مكنش لينك مباشر، نستخدم طريقة الاستخراج من الرسائل النصية
+            if (!extracted) {
+                const urlMatch = text.match(/(https?:\/\/[^\s]+)/i);
+                if (urlMatch) document.getElementById('server').value = urlMatch[1].trim();
 
+                const userMatch = text.match(/(?:اسم المستخدم|username|user|يوزر)[^:\n]*[:=-]\s*([^\s]+)/i);
+                if (userMatch) document.getElementById('username').value = userMatch[1].trim();
+
+                const passMatch = text.match(/(?:كلمة السر|كلمة المرور|password|pass|باسوورد)[^:\n]*[:=-]\s*([^\s]+)/i);
+                if (passMatch) document.getElementById('password').value = passMatch[1].trim();
+            }
+
+            // 4. استخراج الماك أدرس في كل الحالات (لو موجود)
             const macMatch = text.match(/([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})/);
-            if (macMatch) document.getElementById('mac').value = macMatch[1].toUpperCase().trim();
+            if (macMatch) {
+                document.getElementById('mac').value = macMatch[1].toUpperCase().trim();
+            }
         }
 
         // دالة لتحويل الـ Unix Timestamp لتاريخ مقروء
@@ -311,19 +337,17 @@
             if (server.endsWith('/')) server = server.slice(0, -1);
             if (!server.startsWith('http://') && !server.startsWith('https://')) server = 'http://' + server;
 
-            // تغيير حالة الزرار وقت التحميل
             btn.innerText = "جاري الفحص...";
             btn.disabled = true;
             resultBox.style.display = 'none';
 
-            // حالة الـ Xtream (فيها فحص)
+            // حالة الـ Xtream
             if (username && password) {
                 let apiUrl = `${server}/player_api.php?username=${username}&password=${password}`;
                 let m3u8Url = `${server}/get.php?username=${username}&password=${password}&type=m3u_plus&output=m3u8`;
                 let statusHtml = '';
 
                 try {
-                    // محاولة فحص الحساب
                     let response = await fetch(apiUrl);
                     let data = await response.json();
 
@@ -340,14 +364,12 @@
                         statusHtml = `<span class="status-badge status-expired">❌ البيانات دي غلط (اليوزر أو الباسوورد مش شغالين)</span>`;
                     }
                 } catch (error) {
-                    // لو حصل مشكلة بسبب حماية المتصفح CORS
                     statusHtml = `
                         <span class="status-badge status-warning">⚠️ السيرفر قافل الفحص المباشر (CORS)</span>
                         <p style="font-size: 13px; color: #a0a0a0;">مش قادرين نجيب تاريخ الانتهاء بسبب حماية السيرفر، بس الرابط اتولد، حمله وجربه بنفسك.</p>
                     `;
                 }
 
-                // عرض النتيجة
                 resultBox.innerHTML = `
                     ${statusHtml}
                     <p>رابط M3U8 المباشر الخاص بيك:</p>
@@ -356,16 +378,15 @@
                 `;
                 resultBox.style.display = 'block';
 
-                // لو الحساب شغال أو مقدرناش نفحصه، حمل الملف
                 if (!statusHtml.includes('البيانات دي غلط')) {
                     window.location.href = m3u8Url;
                 }
             } 
-            // حالة الـ Stalker (بدون فحص لأن الفحص من المتصفح مستحيل)
+            // حالة الـ Stalker
             else if (mac) {
                 resultBox.innerHTML = `
                     <span class="status-badge status-warning">ℹ️ بورتال Stalker (لا يمكن فحصه المباشر)</span>
-                    <p class="stalker-note">تنبيه فني: نظام Stalker بيحتاج برامج مخصصة للاتصال، والفحص من المتصفح مقفول أمنياً. استخدم البيانات دي جوه تطبيقك.</p>
+                    <p style="color: var(--stalker-color); font-size: 14px; margin-bottom: 15px;">تنبيه فني: نظام Stalker بيحتاج برامج مخصصة للاتصال. استخدم البيانات دي جوه تطبيقك.</p>
                     <p><strong>رابط البورتال (Portal):</strong></p>
                     <div class="result-url">${server}/c/</div>
                     <p><strong>الماك أدرس (MAC):</strong></p>
@@ -376,7 +397,6 @@
                 alert('البيانات مش كاملة يا غالي. لازم يوزر وباسوورد للاكستريم، أو ماك أدرس للستالكر.');
             }
 
-            // إرجاع الزرار لحالته
             btn.innerText = "فحص الحساب وتوليد الرابط";
             btn.disabled = false;
         }
